@@ -9,8 +9,6 @@
     >
 
     <title>Timer</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏳</text></svg>">
 
 
@@ -828,8 +826,8 @@
             "6:30",
             "10:00",
             "18:00",
-            "20:00",
-            "30:00"
+            "30:00",
+            "1:00:00"
         ];
 
 
@@ -838,6 +836,8 @@
            ================================================== */
 
         let remaining = 0;
+
+        let startTime = null;
 
         let endTime = null;
 
@@ -1099,26 +1099,41 @@
 
 
         function updateEndTimeDisplay() {
-            if (endTime === null) {
+            if (
+                startTime === null ||
+                endTime === null
+            ) {
                 endTimeElement.textContent = "";
                 endTimeElement.classList.remove("visible");
 
                 return;
             }
 
+            const startDate = new Date(startTime);
             const endDate = new Date(endTime);
 
-            const time = endDate.toLocaleTimeString(
-                "ru-RU",
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit"
-                }
-            );
+            const startTimeString =
+                startDate.toLocaleTimeString(
+                    "ru-RU",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
+
+            const endTimeString =
+                endDate.toLocaleTimeString(
+                    "ru-RU",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
 
             endTimeElement.textContent =
-                `➤ до [${time}]`;
+                `[${startTimeString} → ${endTimeString}]`;
 
             endTimeElement.classList.add("visible");
         }
@@ -1527,13 +1542,13 @@
 
 
             oscillator.frequency.setValueAtTime(
-                880,
+                520,
                 now
             );
 
             oscillator.frequency.setValueAtTime(
-                660,
-                now + 0.12
+                390,
+                now + 0.16
             );
 
 
@@ -1543,13 +1558,13 @@
             );
 
             gain.gain.exponentialRampToValueAtTime(
-                0.28,
-                now + 0.02
+                0.75,
+                now + 0.03
             );
 
             gain.gain.exponentialRampToValueAtTime(
                 0.0001,
-                now + 0.35
+                now + 0.45
             );
 
 
@@ -1853,10 +1868,12 @@
              * Новый полный запуск.
              */
 
+            startTime = Date.now();
+
             remaining = duration;
 
             endTime =
-                Date.now() + duration;
+                startTime + duration;
 
 
             initializeAudio();
@@ -2268,22 +2285,6 @@
         createTemplates();
 
         updateDisplay();
-
-        if ("serviceWorker" in navigator) {
-
-            window.addEventListener(
-                "load",
-                () => {
-
-                    navigator.serviceWorker.register(
-                        "./sw.js"
-                    );
-
-                }
-            );
-
-        }
-
     </script>
 
 </body>
