@@ -1414,6 +1414,7 @@
 
                             releaseWakeLock();
 
+                            startTime = null;
                             endTime = null;
 
                             remaining =
@@ -1657,6 +1658,7 @@
              * Полностью обнуляем состояние.
              */
 
+            startTime = null;
             endTime = null;
             remaining = 0;
 
@@ -1684,6 +1686,7 @@
             releaseWakeLock();
 
 
+            startTime = null;
             endTime = null;
             remaining = 0;
 
@@ -1843,8 +1846,41 @@
 
 
             /*
-             * Берём время заново из полей.
+             * ПРОДОЛЖЕНИЕ ПОСЛЕ ПАУЗЫ.
+             *
+             * Если startTime существует,
+             * но endTime отсутствует —
+             * таймер находится на паузе.
              */
+
+            if (
+                startTime !== null &&
+                endTime === null &&
+                remaining > 0
+            ) {
+
+                endTime =
+                    Date.now() + remaining;
+
+                initializeAudio();
+
+                startTicking();
+
+                acquireWakeLock();
+
+                messageElement.textContent = "";
+
+                updateTimer();
+
+                return;
+            }
+
+
+            /*
+            * НОВЫЙ ПОЛНЫЙ ЗАПУСК.
+            *
+            * Время берём из полей.
+            */
 
             const duration =
                 getInputDuration();
@@ -1852,6 +1888,7 @@
 
             if (duration <= 0) {
 
+                startTime = null;
                 endTime = null;
                 remaining = 0;
 
@@ -1864,13 +1901,11 @@
             }
 
 
-            /*
-             * Новый полный запуск.
-             */
+            startTime =
+                Date.now();
 
-            startTime = Date.now();
-
-            remaining = duration;
+            remaining =
+                duration;
 
             endTime =
                 startTime + duration;
@@ -1938,6 +1973,7 @@
             releaseWakeLock();
 
 
+            startTime = null;
             endTime = null;
 
 
