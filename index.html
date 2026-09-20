@@ -121,6 +121,40 @@
 
 
         /* ==================================================
+           ПРОШЕДШЕЕ ВРЕМЯ ПОСЛЕ ЗАВЕРШЕНИЯ
+           ================================================== */
+
+        .overtime {
+            min-height: 42px;
+
+            margin-top: 6px;
+            margin-bottom: 12px;
+
+            color: var(--light);
+
+            font-size: 30px;
+            font-weight: 500;
+            line-height: 1;
+
+            text-align: center;
+
+            font-variant-numeric: tabular-nums;
+
+            opacity: 0;
+            visibility: hidden;
+
+            transition:
+                opacity 0.2s ease,
+                visibility 0.2s ease;
+        }
+
+        .overtime.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+
+        /* ==================================================
            ПУЛЬСАЦИЯ ПОСЛЕДНИХ 10 СЕКУНД
            ================================================== */
 
@@ -734,8 +768,18 @@
                 Время вышло
             </div>
 
+            <div
+                id="overtime"
+                class="overtime"
+                aria-live="polite"
+            >
+                -00:00:00
+            </div>
+
             <div class="modal-text">
-                Таймер завершён.
+                Таймер на
+                <strong id="completedDuration">00:00:00</strong>
+                завершён.
             </div>
 
             <div class="modal-hint">
@@ -801,6 +845,14 @@
         const alarmModal =
             document.getElementById("alarmModal");
 
+        const overtimeElement =
+            document.getElementById("overtime");
+
+        const completedDurationElement =
+            document.getElementById(
+                "completedDuration"
+            );
+
         const dismissAlarmButton =
             document.getElementById(
                 "dismissAlarmButton"
@@ -842,6 +894,10 @@
         let endTime = null;
 
         let isAlarmActive = false;
+
+        let completionTime = null;
+
+        let alarmDuration = 0;
 
         let audioContext = null;
 
@@ -991,7 +1047,10 @@
 
                 fallbackBeepId =
                     setInterval(
-                        playAlarmSound,
+                        () => {
+                            updateOvertimeDisplay();
+                            playAlarmSound();
+                        },
                         1000
                     );
             }
@@ -1095,6 +1154,74 @@
                 String(minutes).padStart(2, "0"),
                 String(seconds).padStart(2, "0")
             ].join(":");
+        }
+
+
+        function formatOvertime(milliseconds) {
+
+            const totalSeconds =
+                Math.max(
+                    0,
+                    Math.floor(
+                        milliseconds / 1000
+                    )
+                );
+
+            const hours =
+                Math.floor(
+                    totalSeconds / 3600
+                );
+
+            const minutes =
+                Math.floor(
+                    (totalSeconds % 3600) / 60
+                );
+
+            const seconds =
+                totalSeconds % 60;
+
+
+            return (
+                "-" +
+                String(hours).padStart(2, "0") +
+                ":" +
+                String(minutes).padStart(2, "0") +
+                ":" +
+                String(seconds).padStart(2, "0")
+            );
+        }
+
+
+        function updateOvertimeDisplay() {
+
+            if (
+                !isAlarmActive ||
+                completionTime === null
+            ) {
+                overtimeElement.textContent =
+                    "-00:00:00";
+
+                overtimeElement.classList.remove(
+                    "visible"
+                );
+
+                return;
+            }
+
+
+            const elapsed =
+                Math.max(
+                    0,
+                    Date.now() - completionTime
+                );
+
+
+            overtimeElement.textContent =
+                formatOvertime(elapsed);
+
+            overtimeElement.classList.add(
+                "visible"
+            );
         }
 
 
@@ -1597,6 +1724,8 @@
 
             isAlarmActive = true;
 
+            updateOvertimeDisplay();
+
 
             alarmModal.classList.add(
                 "visible"
@@ -1625,6 +1754,10 @@
             stopBeeping();
 
             isAlarmActive = false;
+
+            completionTime = null;
+
+            updateOvertimeDisplay();
 
             alarmModal.classList.remove(
                 "visible"
@@ -1684,6 +1817,12 @@
             stopTicking();
 
             releaseWakeLock();
+
+            completionTime = Date.now();
+
+
+            completedDurationElement.textContent =
+                formatTime(alarmDuration);
 
 
             startTime = null;
@@ -1766,6 +1905,8 @@
 
                 endTime += 10000;
 
+                alarmDuration += 10000;
+
                 remaining =
                     endTime - Date.now();
 
@@ -1783,6 +1924,17 @@
              */
 
             remaining += 10000;
+
+
+            /*
+             * Если таймер был поставлен на паузу,
+             * увеличиваем и общую длительность
+             * текущего запуска.
+             */
+
+            if (startTime !== null) {
+                alarmDuration += 10000;
+            }
 
 
             /*
@@ -1909,6 +2061,9 @@
 
             endTime =
                 startTime + duration;
+
+            alarmDuration =
+                duration;
 
 
             initializeAudio();
@@ -2061,6 +2216,7 @@
                         /*
                          * Пока поле не пустое —
                          * обновляем отображение.
+
                          */
 
                         if (
@@ -2261,6 +2417,7 @@
                 ) {
 
                     updateTimer();
+                    updateOvertimeDisplay();
 
 
                     if (
@@ -2304,6 +2461,7 @@
                          */
 
                         if (isAlarmActive) {
+                            updateOvertimeDisplay();
                             playAlarmSound();
                         }
                     }
